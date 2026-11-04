@@ -4,3 +4,5 @@ dist
 coverage
 pnpm-lock.yaml
 packages/db/drizzle/**/*.sql
+next-env.d.ts
+**/next-env.d.ts
