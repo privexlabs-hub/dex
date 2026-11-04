@@ -42,7 +42,7 @@ export const storageSchema = z.object({
   S3_BUCKET: nonEmpty,
   S3_ACCESS_KEY_ID: nonEmpty,
   S3_SECRET_ACCESS_KEY: nonEmpty,
-  /** Force path-style addressing (required for MinIO). */
+  /** Force path-style addressing (required for RustFS). */
   S3_FORCE_PATH_STYLE: bool.default(false),
   /** Signed URL lifetime in seconds. Kept short by policy (ADR-009). */
   S3_SIGNED_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(600),
@@ -96,12 +96,15 @@ export class EnvValidationError extends Error {
 /**
  * Validate `source` (defaults to process.env) against a schema. Throws a
  * readable error listing every missing/invalid key, without echoing values.
+ * An empty string counts as unset: `KEY=` in an env file means "not configured",
+ * so optional keys stay optional and defaults apply.
  */
 export function loadEnv<T extends z.ZodObject>(
   schema: T,
   source: Record<string, string | undefined> = process.env,
 ): z.infer<T> {
-  const result = schema.safeParse(source);
+  const present = Object.fromEntries(Object.entries(source).filter(([, value]) => value !== ''));
+  const result = schema.safeParse(present);
   if (!result.success) {
     throw new EnvValidationError(
       result.error.issues.map((i) => ({ path: i.path.join('.') || '(root)', message: i.message })),

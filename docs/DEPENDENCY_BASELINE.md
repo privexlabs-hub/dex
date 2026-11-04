@@ -62,7 +62,7 @@ Verified against the npm registry on **2026-11-04** (`npm view <pkg> version lic
 
 | Package                                                                                   | Pinned          | License    | Note                                                                |
 | ----------------------------------------------------------------------------------------- | --------------- | ---------- | ------------------------------------------------------------------- |
-| @aws-sdk/client-s3, @aws-sdk/s3-request-presigner                                         | 3.1161.0        | Apache-2.0 | S3 API against R2 (prod) / MinIO (local).                           |
+| @aws-sdk/client-s3, @aws-sdk/s3-request-presigner                                         | 3.1161.0        | Apache-2.0 | S3 API against R2 (prod) / RustFS (local).                          |
 | @opentelemetry/api                                                                        | 1.10.0          | Apache-2.0 |                                                                     |
 | @opentelemetry/sdk-node                                                                   | 0.300.0         | Apache-2.0 |                                                                     |
 | @opentelemetry/sdk-trace-node                                                             | 2.12.0          | Apache-2.0 |                                                                     |

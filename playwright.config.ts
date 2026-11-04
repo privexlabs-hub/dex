@@ -1,5 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Keeps the seed credentials in step with `pnpm db:seed:dev`. Optional; absent in CI.
+try {
+  process.loadEnvFile('.env.local');
+} catch {
+  // Rely on the real environment.
+}
+
 /**
  * End-to-end suite. Expects the apps to be running (CI starts the production
  * builds) and Mailpit on MAILPIT_URL for reading verification emails.

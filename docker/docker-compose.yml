@@ -1,5 +1,9 @@
 # Local development infrastructure. Nothing here is used in production.
 # Start: pnpm infra:up   Stop: pnpm infra:down
+#
+# Host ports are deliberately non-standard and bound to loopback, so DeX never
+# collides with, or accidentally connects to, another project's Postgres/Redis/S3
+# on the same machine. Keep them in step with .env.example.
 name: dex
 
 services:
@@ -10,9 +14,9 @@ services:
       POSTGRES_PASSWORD: dex_admin_dev
       POSTGRES_DB: dex
     ports:
-      - '5432:5432'
+      - '127.0.0.1:55432:5432'
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U dex_admin -d dex']
@@ -25,44 +29,38 @@ services:
     command:
       ['redis-server', '--save', '', '--appendonly', 'no', '--maxmemory-policy', 'noeviction']
     ports:
-      - '6379:6379'
+      - '127.0.0.1:56379:6379'
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
       retries: 20
 
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ':9001'
+  # S3-compatible storage. Cloudflare R2 replaces this in production (ADR-009).
+  # Buckets are created by `pnpm infra:up` through packages/storage.
+  rustfs:
+    image: rustfs/rustfs:1.0.4
     environment:
-      MINIO_ROOT_USER: dex_minio
-      MINIO_ROOT_PASSWORD: dex_minio_dev
+      RUSTFS_ACCESS_KEY: dex_rustfs
+      RUSTFS_SECRET_KEY: dex_rustfs_dev
+      RUSTFS_CONSOLE_ENABLE: 'true'
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - '127.0.0.1:59000:9000'
+      - '127.0.0.1:59001:9001'
     volumes:
-      - ./data/minio:/data
+      # Named volume, so the image's non-root user (UID 10001) can write on Linux too.
+      - rustfs-data:/data
     healthcheck:
-      test: ['CMD', 'mc', 'ready', 'local']
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:9000/health']
       interval: 5s
       timeout: 3s
       retries: 20
 
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      mc alias set local http://minio:9000 dex_minio dex_minio_dev &&
-      mc mb --ignore-existing local/dex-media &&
-      mc anonymous set none local/dex-media
-      "
-
   mailpit:
     image: axllent/mailpit:latest
     ports:
-      - '8025:8025'
-      - '1025:1025'
+      - '127.0.0.1:58025:8025'
+      - '127.0.0.1:51025:1025'
+
+volumes:
+  rustfs-data:

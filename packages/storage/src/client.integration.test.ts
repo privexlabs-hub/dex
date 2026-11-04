@@ -8,7 +8,7 @@ const run =
     ? describe
     : describe.skip;
 
-run('storage round trip (MinIO/R2)', () => {
+run('storage round trip (RustFS/R2)', () => {
   const storage = createStorage({
     endpoint: env.S3_ENDPOINT ?? '',
     region: env.S3_REGION ?? 'auto',

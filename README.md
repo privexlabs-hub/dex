@@ -13,7 +13,7 @@ AI product marketing, video creation and creative production platform. A founder
 | Staff backoffice (`apps/admin`) | Separate Better Auth realm (own tables/secret/cookies), no self sign-up, optional IP allowlist, MFA enforcement switch, DB-driven RBAC with 7 built-in roles and 31 permissions, step-up re-authentication for privileged actions, real platform metrics, queue counts, feature-flag toggling, audit log viewer | Playwright `e2e/staff-backoffice.spec.ts`                                                                             |
 | Database (`packages/db`)        | Drizzle schema (customer auth, tenancy, staff realm, RBAC, break-glass grants, append-only hash-chained audit log, feature flags, system settings), migrations, Row-Level Security on tenant tables, non-owner application role, tenant-scoped transactions                                                     | Integration test proves cross-tenant reads/writes are blocked and audit rows cannot be updated or deleted by any role |
 | Queue (`packages/queue`)        | BullMQ 6 on Redis, Zod job contracts, idempotent enqueue, worker factory with abort signals; `apps/worker` with role selection, readiness probes, graceful shutdown                                                                                                                                             | Integration round-trip test; readiness probe                                                                          |
-| Storage (`packages/storage`)    | S3-compatible client (R2 in production, MinIO locally), tenant-prefixed keys, short-lived signed URLs that refuse other tenants' keys                                                                                                                                                                           | Integration test                                                                                                      |
+| Storage (`packages/storage`)    | S3-compatible client (R2 in production, RustFS locally), tenant-prefixed keys, short-lived signed URLs that refuse other tenants' keys                                                                                                                                                                          | Integration test                                                                                                      |
 | Observability                   | pino with secret redaction, OpenTelemetry SDK 3 bootstrap (OTLP/HTTP), shutdown manager                                                                                                                                                                                                                         | Unit test for redaction                                                                                               |
 | Flags                           | Postgres-backed OpenFeature provider with org/user/plan/rollout rules                                                                                                                                                                                                                                           | Unit tests                                                                                                            |
 | CI                              | Lint, typecheck, unit tests, build, audit, integration tests, e2e, Docker image builds                                                                                                                                                                                                                          | `.github/workflows/ci.yml`                                                                                            |
@@ -22,20 +22,21 @@ See `docs/` for architecture, database, security, operations and the decision re
 
 ## Local setup
 
-Requirements: Node.js 26 (see `.nvmrc`; 22.12+ works), Docker (for Postgres/Redis/MinIO/Mailpit), Corepack.
+Full walkthrough, including every key and production setup: **[docs/SETUP.md](docs/SETUP.md)**.
+
+Requirements: Node.js 26 (see `.nvmrc`; 22.12+ works), Docker (for Postgres/Redis/RustFS/Mailpit), pnpm 12.
 
 ```bash
-corepack enable
+npm install -g pnpm@12.16.1
 pnpm install
-cp .env.example .env            # placeholders only; generate real secrets
-pnpm infra:up                   # Postgres 18 + pgvector, Redis 8, MinIO, Mailpit
-pnpm turbo run build --filter=./packages/*
+cp .env.example .env.local      # then generate the two auth secrets (docs/SETUP.md, step 3)
+pnpm infra:up                   # Postgres 18 + pgvector, Redis 8, RustFS, Mailpit; creates the bucket
 pnpm db:migrate                 # applies packages/db/drizzle with the owner role
 pnpm db:seed:dev                # built-in staff roles + a super admin (dev only)
-pnpm dev                        # web :3000, admin :3100, worker :4000
+pnpm dev                        # builds packages, then web :3000, admin :3100, worker :4000
 ```
 
-Default dev staff login: `admin@dex.localhost` / `change-me-before-anything-else!` (override with `SEED_STAFF_EMAIL` / `SEED_STAFF_PASSWORD`). Emails land in Mailpit at http://localhost:8025. MinIO console: http://localhost:9001.
+Default dev staff login: `admin@dex.localhost` / `change-me-before-anything-else!` (override with `SEED_STAFF_EMAIL` / `SEED_STAFF_PASSWORD`). Emails land in Mailpit at http://localhost:58025. RustFS console: http://localhost:59001.
 
 `neon.ts`/Neon branches are used for shared environments; locally everything runs in Docker.
 
@@ -52,7 +53,7 @@ Default dev staff login: `admin@dex.localhost` / `change-me-before-anything-else
 
 ## Environment variables
 
-Documented with safe placeholders in `.env.example`; validated at process start by `packages/env` (missing or invalid keys fail fast and never echo values). Two database URLs are required: `DATABASE_URL` (application role, subject to RLS) and `DATABASE_ADMIN_URL` (owner, migrations/seeds only).
+Every variable is documented in `.env.example`. Every pnpm script loads the root `.env.local` automatically; `.env.production` is a fill-in sheet that the apps never load. Variables are validated at process start by `packages/env` (missing or invalid keys fail fast and never echo values). Two database URLs are required: `DATABASE_URL` (application role, subject to RLS) and `DATABASE_ADMIN_URL` (owner, migrations/seeds only). See [docs/SETUP.md](docs/SETUP.md).
 
 ## Repository layout
 

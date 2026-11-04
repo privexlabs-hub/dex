@@ -23,7 +23,7 @@
     "db:migrate": "pnpm --filter @dex/db migrate",
     "db:seed:dev": "pnpm --filter @dex/db seed:dev",
     "audit": "pnpm audit --prod --audit-level high",
-    "infra:up": "docker compose -f docker/docker-compose.yml up -d",
+    "infra:up": "docker compose -f docker/docker-compose.yml up -d --wait && pnpm --filter @dex/storage bucket:init",
     "infra:down": "docker compose -f docker/docker-compose.yml down",
     "test:e2e": "playwright test",
     "typecheck:e2e": "tsc -p e2e/tsconfig.json"

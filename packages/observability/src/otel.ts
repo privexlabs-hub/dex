@@ -18,14 +18,18 @@ export interface StartTelemetryOptions {
   headers?: string | undefined;
 }
 
-function parseHeaders(raw?: string): Record<string, string> {
+export function parseHeaders(raw?: string): Record<string, string> {
   if (!raw) return {};
-  return Object.fromEntries(
-    raw
-      .split(',')
-      .map((kv) => kv.split('=').map((s) => s.trim()))
-      .filter((p): p is [string, string] => p.length === 2 && p[0] !== '' && p[1] !== ''),
-  );
+  const headers: Record<string, string> = {};
+  for (const pair of raw.split(',')) {
+    // Split on the first "=" only: base64 credentials end in "=" padding.
+    const at = pair.indexOf('=');
+    if (at < 0) continue;
+    const key = pair.slice(0, at).trim();
+    const value = decodeURIComponent(pair.slice(at + 1).trim());
+    if (key && value) headers[key] = value;
+  }
+  return headers;
 }
 
 /**

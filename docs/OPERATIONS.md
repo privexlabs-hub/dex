@@ -12,9 +12,11 @@ Workers drain on `SIGTERM`: in-flight jobs receive an `AbortSignal`, the BullMQ 
 
 ## Environments
 
+Step-by-step setup and where to get each key: [SETUP.md](SETUP.md).
+
 | Environment      | Database                                                                       | Storage                 | Secrets                        | Notes                               |
 | ---------------- | ------------------------------------------------------------------------------ | ----------------------- | ------------------------------ | ----------------------------------- |
-| Local            | Docker Postgres 18 + pgvector                                                  | MinIO                   | `.env` (git-ignored)           | `pnpm infra:up`                     |
+| Local            | Docker Postgres 18 + pgvector                                                  | RustFS                  | `.env.local` (git-ignored)     | `pnpm infra:up`                     |
 | Preview (per PR) | Neon branch from `staging`                                                     | R2 bucket `dex-preview` | secrets manager, preview scope | auto-deleted on PR close            |
 | Staging          | Neon project `dex-staging` (Frankfurt)                                         | R2 `dex-staging`        | secrets manager                | migrations applied before promotion |
 | Production       | Neon project `dex-prod` (Frankfurt, Launch plan; Scale when SOC 2 is required) | R2 `dex-prod`           | secrets manager                | scale-to-zero disabled              |

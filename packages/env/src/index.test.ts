@@ -15,6 +15,24 @@ describe('loadEnv', () => {
     expect(env.LOG_LEVEL).toBe('info');
   });
 
+  it('treats empty strings as unset so a copied template validates', () => {
+    const env = loadEnv(coreSchema, {
+      OTEL_SERVICE_NAME: '',
+      OTEL_EXPORTER_OTLP_ENDPOINT: '',
+      OTEL_EXPORTER_OTLP_HEADERS: '',
+      SENTRY_DSN: '',
+      LOG_LEVEL: '',
+    });
+    expect(env.OTEL_EXPORTER_OTLP_ENDPOINT).toBeUndefined();
+    expect(env.OTEL_SERVICE_NAME).toBeUndefined();
+    expect(env.SENTRY_DSN).toBeUndefined();
+    expect(env.LOG_LEVEL).toBe('info');
+  });
+
+  it('still rejects an empty required key', () => {
+    expect(() => loadEnv(databaseSchema, { DATABASE_URL: '' })).toThrowError(EnvValidationError);
+  });
+
   it('lists every invalid key without echoing values', () => {
     expect(() => loadEnv(databaseSchema, { DATABASE_URL: 'not a url' })).toThrowError(
       EnvValidationError,

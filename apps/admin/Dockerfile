@@ -1,12 +1,14 @@
 # syntax=docker/dockerfile:1.7
 FROM node:26-bookworm-slim AS base
-ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH COREPACK_ENABLE_DOWNLOAD_PROMPT=0 NEXT_TELEMETRY_DISABLED=1
-RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 ca-certificates && rm -rf /var/lib/apt/lists/* && corepack enable
+ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH NEXT_TELEMETRY_DISABLED=1
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 ca-certificates && rm -rf /var/lib/apt/lists/* && npm install -g pnpm@12.16.1
 WORKDIR /repo
 
 FROM base AS build
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --filter @dex/admin...
+# Inlined into the browser bundle at build time, so it must be a build arg.
+ARG NEXT_PUBLIC_ADMIN_URL
 RUN pnpm --filter @dex/admin... build
 
 FROM base AS runtime

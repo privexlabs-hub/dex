@@ -8,7 +8,7 @@ export async function register() {
   if (!process.env.OTEL_EXPORTER_OTLP_ENDPOINT) return;
   const { startTelemetry } = await import('@dex/observability/otel');
   await startTelemetry({
-    serviceName: process.env.OTEL_SERVICE_NAME ?? 'dex-admin',
+    serviceName: process.env.OTEL_SERVICE_NAME || 'dex-admin',
     environment: process.env.APP_ENV ?? 'development',
     endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
     headers: process.env.OTEL_EXPORTER_OTLP_HEADERS,

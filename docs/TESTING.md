@@ -1,12 +1,12 @@
 # Testing
 
-| Layer                       | Tool                                                     | Location                                             | Runs in                                                                                |
-| --------------------------- | -------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Unit                        | Vitest 5                                                 | `packages/*/src/**/*.test.ts`, `apps/*/**/*.test.ts` | `pnpm test` (Turbo), CI `verify`                                                       |
-| Integration (live services) | Vitest                                                   | `*.integration.test.ts` in `db`, `queue`, `storage`  | `pnpm test:integration`, CI `integration` with Postgres/Redis/MinIO service containers |
-| End-to-end                  | Playwright 1.64 (Pixel 7 + Desktop Chrome projects)      | `e2e/*.spec.ts`                                      | `pnpm test:e2e` against running apps; CI `e2e` boots production builds + Mailpit       |
-| Static                      | ESLint 9 (type-aware), tsc, Prettier, dependency-cruiser | repo-wide                                            | CI `verify`                                                                            |
-| Supply chain                | `pnpm audit --prod --audit-level high`, Renovate         |                                                      | CI `verify`                                                                            |
+| Layer                       | Tool                                                     | Location                                             | Runs in                                                                                 |
+| --------------------------- | -------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Unit                        | Vitest 5                                                 | `packages/*/src/**/*.test.ts`, `apps/*/**/*.test.ts` | `pnpm test` (Turbo), CI `verify`                                                        |
+| Integration (live services) | Vitest                                                   | `*.integration.test.ts` in `db`, `queue`, `storage`  | `pnpm test:integration`, CI `integration` with Postgres/Redis/RustFS service containers |
+| End-to-end                  | Playwright 1.64 (Pixel 7 + Desktop Chrome projects)      | `e2e/*.spec.ts`                                      | `pnpm test:e2e` against running apps; CI `e2e` boots production builds + Mailpit        |
+| Static                      | ESLint 9 (type-aware), tsc, Prettier, dependency-cruiser | repo-wide                                            | CI `verify`                                                                             |
+| Supply chain                | `pnpm audit --prod --audit-level high`, Renovate         |                                                      | CI `verify`                                                                             |
 
 ## What the Phase 1 tests prove
 
@@ -27,8 +27,7 @@
 
 ```bash
 pnpm check                       # lint, typecheck, unit, build
-set -a; . ./.env; set +a         # or use direnv
-pnpm test:integration
+pnpm test:integration            # reads .env.local; needs pnpm infra:up and pnpm db:migrate; stop pnpm dev first
 pnpm test:e2e                    # apps must be running (pnpm dev or production builds)
 ```
 
