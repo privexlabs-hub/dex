@@ -1,0 +1,5 @@
+{
+  "extends": "@dex/config/tsconfig/base.json",
+  "files": [],
+  "references": []
+}

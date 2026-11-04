@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+
+/*
+ * Foundation tokens only. The DeX visual identity is defined in the design
+ * exploration track and will replace these values; nothing here is final.
+ * Customer campaign rendering never reads these tokens.
+ */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --color-bg: oklch(99% 0 0);
+  --color-fg: oklch(20% 0.01 260);
+  --color-muted: oklch(55% 0.02 260);
+  --color-border: oklch(90% 0.01 260);
+  --color-accent: oklch(55% 0.17 265);
+  --color-accent-fg: oklch(99% 0 0);
+  --color-danger: oklch(55% 0.2 25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: oklch(15% 0.01 260);
+    --color-fg: oklch(95% 0.01 260);
+    --color-muted: oklch(70% 0.02 260);
+    --color-border: oklch(30% 0.01 260);
+  }
+}
+
+html {
+  color-scheme: light dark;
+}
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  -webkit-font-smoothing: antialiased;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":pinAllExceptPeerDependencies", "schedule:weekly"],
+  "minimumReleaseAge": "3 days",
+  "rangeStrategy": "pin",
+  "packageRules": [
+    { "matchUpdateTypes": ["major"], "automerge": false, "labels": ["dependencies", "major"] },
+    { "groupName": "opentelemetry", "matchPackagePatterns": ["^@opentelemetry/"] },
+    {
+      "groupName": "next",
+      "matchPackageNames": ["next", "eslint-config-next", "@next/eslint-plugin-next"]
+    },
+    { "groupName": "remotion", "matchPackagePatterns": ["^@remotion/", "^remotion$"] },
+    { "groupName": "ai-sdk", "matchPackagePatterns": ["^@ai-sdk/", "^ai$"] }
+  ],
+  "vulnerabilityAlerts": { "enabled": true, "labels": ["security"] }
+}

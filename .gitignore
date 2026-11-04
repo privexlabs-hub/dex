@@ -1,0 +1,16 @@
+node_modules/
+.pnpm-store/
+.turbo/
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+playwright-report/
+test-results/
+docker/data/

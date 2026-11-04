@@ -1,0 +1,45 @@
+{
+  "name": "@dex/observability",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Structured logging (pino), OpenTelemetry bootstrap and graceful shutdown",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./otel": {
+      "types": "./dist/otel.d.ts",
+      "import": "./dist/otel.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dex/env": "workspace:*",
+    "@opentelemetry/api": "1.10.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "0.300.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.300.0",
+    "@opentelemetry/instrumentation-http": "0.300.0",
+    "@opentelemetry/instrumentation-ioredis": "0.72.0",
+    "@opentelemetry/instrumentation-pg": "0.77.0",
+    "@opentelemetry/resources": "3.0.0",
+    "@opentelemetry/sdk-metrics": "3.0.0",
+    "@opentelemetry/sdk-node": "0.300.0",
+    "@opentelemetry/semantic-conventions": "1.44.0",
+    "pino": "10.4.0"
+  },
+  "devDependencies": {
+    "@dex/config": "workspace:*",
+    "@types/node": "26.6.6",
+    "eslint": "9.39.5",
+    "pino-pretty": "13.2.0",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
+  }
+}

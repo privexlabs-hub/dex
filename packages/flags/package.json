@@ -1,0 +1,31 @@
+{
+  "name": "@dex/flags",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Feature flags stored in Postgres, exposed through an OpenFeature provider",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dex/db": "workspace:*",
+    "@openfeature/server-sdk": "1.23.0",
+    "drizzle-orm": "0.45.4"
+  },
+  "devDependencies": {
+    "@dex/config": "workspace:*",
+    "@types/node": "26.6.6",
+    "eslint": "9.39.5",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
+  }
+}

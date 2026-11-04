@@ -1,0 +1,5 @@
+# ADR-013 Originality engine: structural fingerprints, calibrated thresholds, measurable diversity
+
+**Decision.** A versioned, Zod-validated CreativeSpecification separates intent, brand constraints (hard), timeline, scenes (parameterised archetypes, not templates), audio, captions and render profiles. A privacy-safe CreativeFingerprint (narrative/hook/tone classes, archetype n-grams, layout/motion/transition/typography tokens, pacing histogram, OKLCH colour histogram, audio tokens, optional embedding in pgvector) is compared with cosine/Jaccard/DTW plus keyframe pHash within a workspace; platform-wide comparison uses k-anonymised centroids only. Thresholds are calibrated on ≥200 human-labelled pairs; diversity is tracked with mean pairwise similarity, Vendi score, archetype coverage and class entropy. Too-similar proposals get structural alternatives, never colour/font shuffles. An LLM's own claim of uniqueness is never accepted as evidence.
+
+**Sources.** Friedman & Dieng, _The Vendi Score_ (TMLR 2023, arXiv:2210.02410).

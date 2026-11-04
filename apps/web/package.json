@@ -1,0 +1,45 @@
+{
+  "name": "@dex/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DeX customer application (mobile-first)",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dex/auth": "workspace:*",
+    "@dex/db": "workspace:*",
+    "@dex/domain": "workspace:*",
+    "@dex/email": "workspace:*",
+    "@dex/env": "workspace:*",
+    "@dex/flags": "workspace:*",
+    "@dex/observability": "workspace:*",
+    "@dex/queue": "workspace:*",
+    "@dex/storage": "workspace:*",
+    "@openfeature/server-sdk": "1.23.0",
+    "@opentelemetry/api": "1.10.0",
+    "better-auth": "1.7.16",
+    "next": "16.4.5",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7",
+    "drizzle-orm": "0.45.4"
+  },
+  "devDependencies": {
+    "@dex/config": "workspace:*",
+    "@tailwindcss/postcss": "4.3.4",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "tailwindcss": "4.3.4",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
+  }
+}

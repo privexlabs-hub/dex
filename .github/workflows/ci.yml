@@ -1,0 +1,205 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+  NEXT_TELEMETRY_DISABLED: '1'
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  verify:
+    name: Lint, typecheck, unit tests, build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm deps:check
+      - run: pnpm turbo run lint typecheck test
+      - run: pnpm typecheck:e2e
+      - name: Build (no runtime secrets required)
+        run: pnpm turbo run build
+      - name: Dependency audit (high/critical fails)
+        run: pnpm audit --prod --audit-level high
+
+  integration:
+    name: Integration tests (Postgres, Redis, MinIO)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: dex_admin
+          POSTGRES_PASSWORD: dex_admin_dev
+          POSTGRES_DB: dex
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U dex_admin -d dex" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: dex_minio
+          MINIO_ROOT_PASSWORD: dex_minio_dev
+          MINIO_DEFAULT_BUCKETS: dex-media
+        ports: ['9000:9000']
+    env:
+      APP_ENV: test
+      DATABASE_ADMIN_URL: postgres://dex_admin:dex_admin_dev@localhost:5432/dex
+      DATABASE_URL: postgres://dex_app:dex_app_dev@localhost:5432/dex
+      REDIS_URL: redis://localhost:6379
+      S3_ENDPOINT: http://localhost:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: dex-media
+      S3_ACCESS_KEY_ID: dex_minio
+      S3_SECRET_ACCESS_KEY: dex_minio_dev
+      S3_FORCE_PATH_STYLE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Create application role (mirrors docker/postgres/init)
+        run: psql "$DATABASE_ADMIN_URL" -v ON_ERROR_STOP=1 -f docker/postgres/init/01-roles.sql
+      - run: pnpm turbo run build --filter=./packages/*
+      - run: pnpm db:migrate
+      - run: pnpm turbo run test:integration
+
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: [verify]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: dex_admin
+          POSTGRES_PASSWORD: dex_admin_dev
+          POSTGRES_DB: dex
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U dex_admin -d dex" --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: dex_minio
+          MINIO_ROOT_PASSWORD: dex_minio_dev
+          MINIO_DEFAULT_BUCKETS: dex-media
+        ports: ['9000:9000']
+      mailpit:
+        image: axllent/mailpit:latest
+        ports: ['8025:8025', '1025:1025']
+    env:
+      APP_ENV: test
+      LOG_LEVEL: warn
+      DATABASE_ADMIN_URL: postgres://dex_admin:dex_admin_dev@localhost:5432/dex
+      DATABASE_URL: postgres://dex_app:dex_app_dev@localhost:5432/dex
+      REDIS_URL: redis://localhost:6379
+      S3_ENDPOINT: http://localhost:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: dex-media
+      S3_ACCESS_KEY_ID: dex_minio
+      S3_SECRET_ACCESS_KEY: dex_minio_dev
+      S3_FORCE_PATH_STYLE: 'true'
+      BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      STAFF_AUTH_SECRET: ci-only-staff-secret-0123456789abcdef0123456789
+      STAFF_AUTH_URL: http://localhost:3100
+      NEXT_PUBLIC_ADMIN_URL: http://localhost:3100
+      STAFF_REQUIRE_MFA: 'false'
+      EMAIL_PROVIDER: smtp
+      EMAIL_FROM: noreply@dex.test
+      SMTP_URL: smtp://localhost:1025
+      MAILPIT_URL: http://localhost:8025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: psql "$DATABASE_ADMIN_URL" -v ON_ERROR_STOP=1 -f docker/postgres/init/01-roles.sql
+      - run: pnpm turbo run build
+      - run: pnpm db:migrate && pnpm db:seed:dev
+      - name: Start apps from production builds
+        run: |
+          for a in web admin; do
+            cp -r apps/$a/.next/static apps/$a/.next/standalone/apps/$a/.next/static
+            cp -r apps/$a/public apps/$a/.next/standalone/apps/$a/public
+          done
+          (cd apps/web && PORT=3000 node .next/standalone/apps/web/server.js > /tmp/web.log 2>&1 &)
+          (cd apps/admin && PORT=3100 node .next/standalone/apps/admin/server.js > /tmp/admin.log 2>&1 &)
+          (cd apps/worker && node dist/main.js > /tmp/worker.log 2>&1 &)
+          for p in 3000 3100 4000; do
+            for i in $(seq 1 30); do curl -sf "http://localhost:$p/api/health" >/dev/null 2>&1 || curl -sf "http://localhost:$p/health" >/dev/null 2>&1 && break; sleep 1; done
+          done
+          curl -sf http://localhost:3000/api/health && curl -sf http://localhost:3100/api/health && curl -sf http://localhost:4000/ready
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+            /tmp/*.log
+          retention-days: 7
+
+  docker:
+    name: Docker images build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: [verify]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/worker/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
